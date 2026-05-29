@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Find Your Edible</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  margin: 0;
+  padding: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #ffffff;
+  color: #1a1a1a;
+}
+.widget { max-width: 520px; margin: 0 auto; }
+
+.widget-header { text-align: center; margin-bottom: 24px; }
+.widget-header h2 { font-size: 19px; font-weight: 700; color: #1B3A2F; margin-bottom: 6px; line-height: 1.3; }
+.widget-header p { font-size: 13px; color: #5a7a6e; }
+
+.progress-bar-wrap { height: 5px; background: #e8f0ec; border-radius: 5px; margin-bottom: 24px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: #1B3A2F; border-radius: 5px; transition: width 0.4s cubic-bezier(.4,0,.2,1); }
+
+.screen { display: none; animation: fadeUp 0.28s ease; }
+.screen.active { display: block; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.q-number { font-size: 11px; font-weight: 700; color: #8aab9d; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+.q-text { font-size: 17px; font-weight: 700; color: #1B3A2F; line-height: 1.35; margin-bottom: 18px; }
+
+.options { display: flex; flex-direction: column; gap: 9px; }
+.opt-btn {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1.5px solid #c8dbd5;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #1B3A2F;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  line-height: 1.35;
+}
+.opt-btn:hover { border-color: #1B3A2F; background: #f0f7f4; }
+.opt-btn.selected { border-color: #1B3A2F; background: #1B3A2F; color: #ffffff; }
+.opt-icon { font-size: 18px; flex-shrink: 0; }
+.opt-sub { font-size: 12px; opacity: 0.65; display: block; margin-top: 1px; font-weight: 400; }
+
+.back-btn { margin-top: 16px; background: transparent; border: none; color: #8aab9d; font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 0; display: flex; align-items: center; gap: 4px; }
+.back-btn:hover { color: #1B3A2F; }
+
+/* Result screen */
+.result-tag { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #5a7a6e; background: #daeee5; padding: 3px 12px; border-radius: 20px; margin-bottom: 14px; }
+.result-intro { font-size: 14px; color: #2d5244; line-height: 1.6; margin-bottom: 20px; }
+
+.product-card { border: 1.5px solid #1B3A2F; border-radius: 14px; background: #f0f7f4; overflow: hidden; margin-bottom: 14px; }
+.product-card-header { background: #1B3A2F; padding: 14px 18px; }
+.product-card-eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #a8d4be; margin-bottom: 4px; }
+.product-card-name { font-size: 16px; font-weight: 700; color: #ffffff; line-height: 1.3; }
+.product-card-body { padding: 14px 18px; }
+.product-card-reason { font-size: 13px; color: #2d5244; line-height: 1.6; margin-bottom: 16px; }
+.what-to-expect { margin-bottom: 16px; }
+.expect-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #5a7a6e; margin-bottom: 8px; }
+.expect-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; font-weight: 500; color: #1B3A2F; background: #daeee5; border-radius: 20px; padding: 4px 12px; border: 1px solid #c8dbd5; }
+.shop-btn { display: block; width: 100%; padding: 14px; background: #1B3A2F; color: #ffffff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; text-align: center; transition: background 0.16s ease; }
+.shop-btn:hover { background: #254d3e; }
+
+.restart-btn { width: 100%; padding: 10px; border: 1.5px solid #c8dbd5; border-radius: 10px; background: transparent; color: #1B3A2F; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.16s ease; }
+.restart-btn:hover { background: #f0f7f4; }
+</style>
+</head>
+<body>
+
+<div class="widget">
+  <h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Find your ideal Mood edible — answer 3 questions to get a personalized recommendation</h2>
+
+  <div class="widget-header">
+    <h2>Find your perfect edible 🌿</h2>
+    <p>3 quick questions — we'll match you with the right product</p>
+  </div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
+  </div>
+
+  <!-- Q1: Experience level -->
+  <div class="screen active" id="screen-q1">
+    <div class="q-number">Question 1 of 3</div>
+    <div class="q-text">How much experience do you have with edibles?</div>
+    <div class="options">
+      <button class="opt-btn" onclick="answer(1, 'new', this)">
+        <span class="opt-icon">🌱</span>
+        <span>Never tried them — or only once or twice<span class="opt-sub">I want to ease in carefully</span></span>
+      </button>
+      <button class="opt-btn" onclick="answer(1, 'some', this)">
+        <span class="opt-icon">🌿</span>
+        <span>I've used edibles a handful of times<span class="opt-sub">I have a general sense of how they affect me</span></span>
+      </button>
+      <button class="opt-btn" onclick="answer(1, 'experienced', this)">
+        <span class="opt-icon">🌲</span>
+        <span>I use edibles regularly<span class="opt-sub">I know my tolerance well</span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Q2: Goal / vibe -->
+  <div class="screen" id="screen-q2">
+    <div class="q-number">Question 2 of 3</div>
+    <div class="q-text">What are you hoping to get out of the experience?</div>
+    <div class="options">
+      <button class="opt-btn" onclick="answer(2, 'relax', this)">
+        <span class="opt-icon">😌</span>
+        <span>Unwind and relax<span class="opt-sub">Take the edge off, melt into the couch</span></span>
+      </button>
+      <button class="opt-btn" onclick="answer(2, 'social', this)">
+        <span class="opt-icon">😄</span>
+        <span>Something fun and social<span class="opt-sub">Good vibes, giggles, music</span></span>
+      </button>
+      <button class="opt-btn" onclick="answer(2, 'deep', this)">
+        <span class="opt-icon">🌊</span>
+        <span>A deeper, immersive experience<span class="opt-sub">I want to really feel it</span></span>
+      </button>
+    </div>
+    <button class="back-btn" onclick="goBack(1)">← Back</button>
+  </div>
+
+  <!-- Q3: Timing concern -->
+  <div class="screen" id="screen-q3">
+    <div class="q-number">Question 3 of 3</div>
+    <div class="q-text">How much time do you have set aside?</div>
+    <div class="options">
+      <button class="opt-btn" onclick="answer(3, 'short', this)">
+        <span class="opt-icon">⚡</span>
+        <span>A few hours — I want it to kick in and wrap up predictably<span class="opt-sub">I have things going on later</span></span>
+      </button>
+      <button class="opt-btn" onclick="answer(3, 'open', this)">
+        <span class="opt-icon">🌙</span>
+        <span>The whole evening — no plans, nowhere to be<span class="opt-sub">I can let the experience unfold naturally</span></span>
+      </button>
+    </div>
+    <button class="back-btn" onclick="goBack(2)">← Back</button>
+  </div>
+
+  <!-- Result -->
+  <div class="screen" id="screen-result">
+    <div class="result-tag">Your match</div>
+    <div class="result-intro" id="result-intro"></div>
+    <div class="product-card">
+      <div class="product-card-header">
+        <div class="product-card-eyebrow">Recommended for you</div>
+        <div class="product-card-name" id="result-name"></div>
+      </div>
+      <div class="product-card-body">
+        <div class="product-card-reason" id="result-reason"></div>
+        <div class="what-to-expect">
+          <div class="expect-label">What to expect</div>
+          <div class="expect-chips" id="result-chips"></div>
+        </div>
+        <a class="shop-btn" id="result-link" href="#" target="_blank">Shop now →</a>
+      </div>
+    </div>
+    <button class="restart-btn" onclick="restart()">Start over</button>
+  </div>
+</div>
+
+<script>
+var answers = {};
+
+var recommendations = {
+  new: {
+    relax: {
+      short: { product: 'low', intro: 'A gentle, easy introduction with no pressure on the clock.' },
+      open:  { product: 'low', intro: 'Plenty of time and no rush — the perfect setup for a low-key first experience.' }
+    },
+    social: {
+      short: { product: 'low', intro: 'Starting low keeps things fun and in control — ideal for a social setting.' },
+      open:  { product: 'low', intro: 'New to edibles and social? Low and slow is the move. You can always take more next time.' }
+    },
+    deep: {
+      short: { product: 'low', intro: 'We hear you on wanting a deeper experience — but starting low is genuinely the best path to get there. Taking too much too soon can derail the whole thing.' },
+      open:  { product: 'low', intro: 'The right intro is still a low dose — once you know how your body responds, the deeper experiences become a lot more enjoyable.' }
+    }
+  },
+  some: {
+    relax: {
+      short: { product: 'medium', intro: 'You know what you\'re doing. A 15mg is a well-rounded option for a relaxed evening with a predictable window.' },
+      open:  { product: 'medium', intro: 'A classic 15mg for a night off. Comfortable, reliable, and exactly what "unwinding" was made for.' }
+    },
+    social: {
+      short: { product: 'medium', intro: 'A 15mg hits the sweet spot for a social vibe — present enough to feel it, controlled enough to stay comfortable.' },
+      open:  { product: 'medium', intro: 'Good vibes incoming. A 15mg with the evening free is a solid combo.' }
+    },
+    deep: {
+      short: { product: 'medium', intro: 'With a few hours on the clock, a 15mg gives you a meaningful experience without committing to an all-nighter.' },
+      open:  { product: 'strong', intro: 'Evening free and some experience under your belt — you\'re in a good spot to step up to a 30mg and really feel it.' }
+    }
+  },
+  experienced: {
+    relax: {
+      short: { product: 'medium', intro: 'Even for seasoned consumers, a 15mg for a shorter window keeps things comfortable and clean.' },
+      open:  { product: 'strong', intro: 'You know your tolerance, you\'ve got the night — a 30mg is made for exactly this.' }
+    },
+    social: {
+      short: { product: 'medium', intro: 'Social and time-conscious — a 15mg keeps you in the zone without overstaying its welcome.' },
+      open:  { product: 'strong', intro: 'Experienced, social, and the evening\'s yours. A 30mg should do it.' }
+    },
+    deep: {
+      short: { product: 'medium', intro: 'For a deeper experience in a shorter window, a 15mg is the practical pick. Save the 30mg for when you have no plans tomorrow.' },
+      open:  { product: 'strong', intro: 'You came here for a real experience and you have the time for it. A 30mg delivers.' }
+    }
+  }
+};
+
+var products = {
+  low: {
+    name: 'Micro-Dose Delta-9 THC Gummies',
+    reason: 'At 2.5mg per gummy, these are designed for full control. You can start with one, feel how your body responds over two hours, and adjust from there — no guesswork, no commitment to more than you want.',
+    chips: ['Gentle onset', 'Easy to control', 'Great for new consumers', 'Stackable dose'],
+    url: 'https://mood.com/product/micro-dose-delta-9-thc-gummies'
+  },
+  medium: {
+    name: '15mg Delta-9 THC Gummies',
+    reason: 'The 15mg is the balanced, reliable middle ground. Enough to deliver a well-rounded body and mind experience without going overboard — a go-to for consumers who know how edibles work for them.',
+    chips: ['Full-body relaxation', 'Mood lift', 'Heightened senses', '4–6 hr experience'],
+    url: 'https://mood.com/product/15mg-delta-9-thc-gummies'
+  },
+  strong: {
+    name: '30mg Delta-9 THC Gummies',
+    reason: 'For experienced consumers who want the full edible experience — deeper body effects, a more immersive mental shift, and a longer duration. Not a beginner product, but exactly right for someone who knows their tolerance.',
+    chips: ['Deep body effects', 'Immersive experience', 'Long-lasting', 'For seasoned consumers'],
+    url: 'https://mood.com/product/30mg-delta-9-thc-gummies'
+  }
+};
+
+function answer(qNum, value, el) {
+  answers[qNum] = value;
+
+  var siblings = el.parentNode.querySelectorAll('.opt-btn');
+  siblings.forEach(function(b) { b.classList.remove('selected'); });
+  el.classList.add('selected');
+
+  var delay = 220;
+  setTimeout(function() {
+    if (qNum === 1) { showScreen('q2'); setProgress(33); }
+    else if (qNum === 2) { showScreen('q3'); setProgress(66); }
+    else if (qNum === 3) { showResult(); setProgress(100); }
+  }, delay);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  var el = document.getElementById('screen-' + id);
+  el.classList.remove('active');
+  void el.offsetWidth;
+  el.classList.add('active');
+}
+
+function setProgress(pct) {
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function showResult() {
+  var exp = answers[1];
+  var goal = answers[2];
+  var time = answers[3];
+
+  var rec = recommendations[exp][goal][time];
+  var prod = products[rec.product];
+
+  document.getElementById('result-intro').textContent = rec.intro;
+  document.getElementById('result-name').textContent = prod.name;
+  document.getElementById('result-reason').textContent = prod.reason;
+  document.getElementById('result-link').href = prod.url;
+
+  var chips = document.getElementById('result-chips');
+  chips.innerHTML = '';
+  prod.chips.forEach(function(c) {
+    var span = document.createElement('span');
+    span.className = 'chip';
+    span.textContent = c;
+    chips.appendChild(span);
+  });
+
+  showScreen('result');
+}
+
+function goBack(toQ) {
+  if (toQ === 1) { showScreen('q1'); setProgress(0); }
+  else if (toQ === 2) { showScreen('q2'); setProgress(33); }
+}
+
+function restart() {
+  answers = {};
+  document.querySelectorAll('.opt-btn').forEach(function(b) { b.classList.remove('selected'); });
+  showScreen('q1');
+  setProgress(0);
+}
+</script>
+
+</body>
+</html>
